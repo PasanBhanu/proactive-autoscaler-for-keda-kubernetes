@@ -1,8 +1,10 @@
-fastapi
-uvicorn
 numpy
 pandas
 scikit-learn
 prophet
 keras
 tensorflow
+grpcio
+grpcio-tools
+protobuf
+prometheus-api-client
