@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keda-lsfb-scaler-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keda-lsfb-scaler-deployment
+  template:
+    metadata:
+      labels:
+        app: keda-lsfb-scaler-deployment
+    spec:
+      containers:
+      - name: keda-lsfb-scaler-deployment
+        image: pasanbhanu/keda-lsfb-scaler:latest
+        ports:
+        - containerPort: 50051
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keda-lsfb-scaler-service
+spec:
+  selector:
+    app: keda-lsfb-scaler-service
+  ports:
+    - protocol: TCP
+      port: 50051
+      targetPort: 50051

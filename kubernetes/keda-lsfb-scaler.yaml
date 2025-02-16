@@ -1,0 +1,24 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: keda-lsfb-scaler
+  namespace: springboot-test
+  annotations:
+    scaledobject.keda.sh/transfer-hpa-ownership: "true"
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: springbootapi-deployment
+  pollingInterval: 5
+  cooldownPeriod: 5
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+  - type: external
+    metadata:
+      scalerAddress: custom-keda-scaler-python-service.keda.svc.cluster.local:50051
+      metricType: custom_metric
+      serverAddress: http://prmop-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+      query: sum(rate(http_server_requests_seconds_count{job="springbootapi-service"}[1m]))
+      podLimit: "10"

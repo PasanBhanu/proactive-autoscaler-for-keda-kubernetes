@@ -1,0 +1,7 @@
+metricServer:
+  replicaCount: 1
+  enabled: true
+
+operator:
+  replicaCount: 1
+  enabled: true
