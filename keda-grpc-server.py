@@ -4,11 +4,59 @@ import externalscaler_pb2
 import externalscaler_pb2_grpc
 from prometheus_api_client import PrometheusConnect
 import logging
+from sklearn.preprocessing import MinMaxScaler
+from prophet.serialize import model_from_json
+from keras.models import load_model
+import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta
 
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
 
+
+# Load Models
+with open('models/fbprophet-nasa-20240911_175323.json', 'r') as f:
+    prophet_model = model_from_json(f.read())
+lstm_model = load_model('models/lstm-nasa-20240911_175323.keras')
+
+
+# Initialize the MinMaxScaler
+scaler = MinMaxScaler(feature_range=(0, 1))
+scaler.fit(np.array([[-118], [284]]))
+
+
+# Predict Traffic using Hybrid Model
+def hybrid_prediction(request_rate, prophet_model, lstm_model, scaler):
+    try:
+        timestamp = datetime.now()
+        future = pd.DataFrame({"ds": [timestamp + timedelta(minutes=1)]})
+
+        # FB Prophet Prediction
+        forecast = prophet_model.predict(future)
+        fb_prophet_prediction = forecast.iloc[-1]["yhat"]
+        logging.info(f"Prophet Prediction: {fb_prophet_prediction}")
+
+        # Residual Calculation
+        residual = request_rate - fb_prophet_prediction
+        logging.info(f"Residual: {residual}")
+
+        scaled_residual = scaler.transform([[residual]])
+        scaled_residual = np.reshape(scaled_residual, (1, 1, 1))
+
+        # LSTM Residual Prediction
+        lstm_residual_prediction = lstm_model.predict(scaled_residual)
+        lstm_residual_prediction = scaler.inverse_transform(lstm_residual_prediction)[0, 0]
+        logging.info(f"Residual Prediction: {lstm_residual_prediction}")
+
+        final_prediction = fb_prophet_prediction + lstm_residual_prediction
+        logging.info(f"Predicted Value: {final_prediction}")
+
+        return final_prediction
+    except Exception as e:
+        raise ValueError(f"Prediction failed with error: {str(e)}")
+    
 
 # Get Prometheus Metric Value
 def get_prometheus_metric(serverAddress, query):
@@ -52,19 +100,20 @@ class ExternalScalerServicer(externalscaler_pb2_grpc.ExternalScalerServicer):
     # GetMetrics
     # Should return the predicted pod count
     def GetMetrics(self, request, context):
-        serverAddress = request.scaledObjectRef.scalerMetadata["serverAddress"]
+        server_address = request.scaledObjectRef.scalerMetadata["serverAddress"]
         query = request.scaledObjectRef.scalerMetadata["query"]
-        podLimit = request.scaledObjectRef.scalerMetadata["podLimit"]
-        logging.info(f"Input Metadata [serverAddress: {serverAddress}, query: {query}, podLimit: {podLimit}]")
+        pod_limit = request.scaledObjectRef.scalerMetadata["podLimit"]
+        logging.info(f"Input Metadata [serverAddress: {server_address}, query: {query}, podLimit: {pod_limit}]")
 
-        prometheusValue = get_prometheus_metric(serverAddress, query)
-
-        result = 1 # TODO: Get the predicted pod count
+        prometheus_value = get_prometheus_metric(server_address, query)
+        predicted_value = hybrid_prediction(prometheus_value, prophet_model, lstm_model, scaler)
         
+        pod_count = predicted_value / pod_limit;
+
         metric_value = externalscaler_pb2.MetricValue(
             metricName="custom_metric",
-            metricValue=int(result),
-            metricValueFloat=float(result)
+            metricValue=int(pod_count),
+            metricValueFloat=float(pod_count)
         )
 
         return externalscaler_pb2.GetMetricsResponse(metricValues=[metric_value])
