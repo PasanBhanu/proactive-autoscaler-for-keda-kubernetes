@@ -29,7 +29,7 @@ scaler.fit(np.array([[-118], [284]]))
 
 
 # Initialize Database
-conn = sqlite3.connect(':memory:')
+conn = sqlite3.connect(':memory:', check_same_thread=False)
 cursor = conn.cursor()
 
 
