@@ -12,7 +12,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 import sqlite3
 
-
 # Configure Logging
 logging.basicConfig(level=logging.INFO)
 
@@ -29,12 +28,12 @@ scaler.fit(np.array([[-118], [284]]))
 
 
 # Initialize Database
-conn = sqlite3.connect(':memory:', check_same_thread=False)
+conn = sqlite3.connect('metrics.db', check_same_thread=False)
 cursor = conn.cursor()
 
 
 # Create Table
-cursor.execute('CREATE TABLE metric_history (timestamp TEXT, current_value REAL, predicted_value REAL, pod_count REAL)')
+cursor.execute('CREATE TABLE IF NOT EXISTS metric_history (timestamp TEXT, current_value REAL, predicted_value REAL, pod_count REAL)')
 conn.commit()
 
 
