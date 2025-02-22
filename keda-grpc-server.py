@@ -107,8 +107,10 @@ class ExternalScalerServicer(externalscaler_pb2_grpc.ExternalScalerServicer):
 
         prometheus_value = get_prometheus_metric(server_address, query)
         predicted_value = hybrid_prediction(prometheus_value, prophet_model, lstm_model, scaler)
+        logging.info(f"Prometheus Value: {prometheus_value}, Predicted Value: {predicted_value}")
         
-        pod_count = predicted_value / pod_limit;
+        pod_count = float(predicted_value) / int(pod_limit)
+        logging.info(f"Pod Count: {pod_count}")
 
         metric_value = externalscaler_pb2.MetricValue(
             metricName="custom_metric",
