@@ -10,6 +10,7 @@ from keras.models import load_model
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
+import sqlite3
 
 
 # Configure Logging
@@ -25,6 +26,16 @@ lstm_model = load_model('models/lstm-nasa-20240911_175323.keras')
 # Initialize the MinMaxScaler
 scaler = MinMaxScaler(feature_range=(0, 1))
 scaler.fit(np.array([[-118], [284]]))
+
+
+# Initialize Database
+conn = sqlite3.connect(':memory:')
+cursor = conn.cursor()
+
+
+# Create Table
+cursor.execute('CREATE TABLE metric_history (timestamp TEXT, current_value REAL, predicted_value REAL, pod_count REAL)')
+conn.commit()
 
 
 # Predict Traffic using Hybrid Model
@@ -111,6 +122,13 @@ class ExternalScalerServicer(externalscaler_pb2_grpc.ExternalScalerServicer):
         
         pod_count = float(predicted_value) / int(pod_limit)
         logging.info(f"Pod Count: {pod_count}")
+
+        # Save Metric History
+        cursor.execute('''
+        INSERT INTO metric_history (timestamp, current_value, predicted_value, pod_count)
+        VALUES (?, ?, ?, ?)
+        ''', (datetime.now().isoformat(), prometheus_value, predicted_value, pod_count))
+        conn.commit()
 
         metric_value = externalscaler_pb2.MetricValue(
             metricName="custom_metric",
