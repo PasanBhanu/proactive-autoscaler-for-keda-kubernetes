@@ -113,9 +113,10 @@ class ExternalScalerServicer(externalscaler_pb2_grpc.ExternalScalerServicer):
         server_address = request.scaledObjectRef.scalerMetadata["serverAddress"]
         query = request.scaledObjectRef.scalerMetadata["query"]
         pod_limit = request.scaledObjectRef.scalerMetadata["podLimit"]
-        logging.info(f"Input Metadata [serverAddress: {server_address}, query: {query}, podLimit: {pod_limit}]")
+        scale_factor = request.scaledObjectRef.scalerMetadata.get("scaleFactor", 1)
+        logging.info(f"Input Metadata [serverAddress: {server_address}, query: {query}, podLimit: {pod_limit}, scaleFactor: {scale_factor}]")
 
-        prometheus_value = get_prometheus_metric(server_address, query)
+        prometheus_value = get_prometheus_metric(server_address, query) * int(scale_factor)
         predicted_value = hybrid_prediction(prometheus_value, prophet_model, lstm_model, scaler)
         logging.info(f"Prometheus Value: {prometheus_value}, Predicted Value: {predicted_value}")
         

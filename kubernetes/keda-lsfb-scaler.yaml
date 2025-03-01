@@ -17,8 +17,9 @@ spec:
   triggers:
   - type: external
     metadata:
-      scalerAddress: custom-keda-scaler-python-service.keda.svc.cluster.local:50051
+      scalerAddress: keda-lsfb-scaler-service.keda.svc.cluster.local:50051
       metricType: custom_metric
       serverAddress: http://prmop-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
       query: sum(rate(http_server_requests_seconds_count{job="springbootapi-service"}[1m]))
-      podLimit: "10"
+      podLimit: "1000"
+      scaleFactor: "100"

@@ -23,14 +23,14 @@ docker push pasanbhanu/keda-lsfb-scaler:latest
 ## Deploy the Docker Image to the Kubernetes Cluster
 
 ```bash
-kubectl apply -f kubernetes/deployment.yaml
+kubectl apply -f kubernetes/deployment.yaml -n keda
 ```
 
 
 ## Deploy the KEDA Scaler to the Kubernetes Cluster
 
 ```bash
-kubectl apply -f kubernetes/lsfb-scaler.yaml
+kubectl apply -f kubernetes/keda-lsfb-scaler.yaml
 ```
 
 
