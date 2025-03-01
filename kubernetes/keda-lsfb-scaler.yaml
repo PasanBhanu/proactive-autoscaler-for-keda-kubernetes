@@ -10,10 +10,13 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: springbootapi-deployment
-  pollingInterval: 5
-  cooldownPeriod: 5
+  pollingInterval: 60
+  cooldownPeriod: 30
   minReplicaCount: 1
   maxReplicaCount: 10
+  fallback:
+    failureThreshold: 3
+    replicas: 1
   triggers:
   - type: external
     metadata:
