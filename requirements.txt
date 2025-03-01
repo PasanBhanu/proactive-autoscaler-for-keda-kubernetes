@@ -9,3 +9,4 @@ grpcio-tools
 protobuf
 prometheus-api-client
 flask
+flask-cors

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metrics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        .chart-container {
+            width: 80%;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h2 class="text-3xl font-bold text-center text-gray-800">Metrics Dashboard</h2>
+    <h4 class="text-lg font-semibold text-center text-gray-600 mt-2">
+        Predictive Autoscaling with Facebook Prophet & LSTM using KEDA
+    </h4>
+
+    <div class="flex justify-center gap-4 mt-6">
+        <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick="confirmClearMetrics()">Clear Data</button>
+    </div>
+
+    <div class="chart-container">
+        <h5>Actual Count vs. Predicted Count Over Time</h5>
+        <canvas id="actualPredictionChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <h5>Pod Count Over Time</h5>
+        <canvas id="podCountChart"></canvas>
+    </div>
+
+    <script>
+        let actualPredictionChart;
+        let podCountChart;
+
+        async function updateCharts() {
+            try {
+                const response = await fetch('http://localhost:5000/api/metrics');
+                const data = await response.json();
+
+                const timestamps = data.map(item => new Date(item[0]).toLocaleString());
+                const actualCounts = data.map(item => item[1]);
+                const predictedCounts = data.map(item => item[2]);
+                const podCounts = data.map(item => item[3]);
+
+                if (actualPredictionChart) {
+                    actualPredictionChart.data.labels = timestamps;
+                    actualPredictionChart.data.datasets[0].data = actualCounts;
+                    actualPredictionChart.data.datasets[1].data = predictedCounts;
+                    actualPredictionChart.update();
+                } else {
+                    const ctx1 = document.getElementById('actualPredictionChart').getContext('2d');
+                    actualPredictionChart = new Chart(ctx1, {
+                        type: 'line',
+                        data: {
+                            labels: timestamps,
+                            datasets: [
+                                {
+                                    label: 'Actual Count',
+                                    data: actualCounts,
+                                    borderColor: 'blue',
+                                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                                    borderWidth: 2,
+                                    fill: true
+                                },
+                                {
+                                    label: 'Predicted Count',
+                                    data: predictedCounts,
+                                    borderColor: 'green',
+                                    backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                                    borderWidth: 2,
+                                    fill: true
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                x: { title: { display: true, text: 'Timestamp' } },
+                                y: { title: { display: true, text: 'Count' } }
+                            }
+                        }
+                    });
+                }
+
+                if (podCountChart) {
+                    podCountChart.data.labels = timestamps;
+                    podCountChart.data.datasets[0].data = podCounts;
+                    podCountChart.update();
+                } else {
+                    const ctx2 = document.getElementById('podCountChart').getContext('2d');
+                    podCountChart = new Chart(ctx2, {
+                        type: 'line',
+                        data: {
+                            labels: timestamps,
+                            datasets: [
+                                {
+                                    label: 'Pod Count',
+                                    data: podCounts,
+                                    borderColor: 'red',
+                                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                                    borderWidth: 2,
+                                    fill: true
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            scales: {
+                                x: { title: { display: true, text: 'Timestamp' } },
+                                y: { title: { display: true, text: 'Pod Count' } }
+                            }
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            }
+        }
+
+        updateCharts();
+
+        setInterval(updateCharts, 30000);
+    </script>
+
+    <script>
+        async function confirmClearMetrics() {
+            const result = await Swal.fire({
+                title: 'Confirm Action',
+                text: 'Are you sure do you want to clear all metrics?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Confirm'
+            });
+            
+            if (result.isConfirmed) {
+                try {
+                    const response = await fetch('http://localhost:5000/metrics/clear', {
+                        method: 'POST'
+                    });
+                    if (response.ok) {
+                        Swal.fire('Cleared!', 'Metrics have been cleared.', 'success');
+                        updateCharts();
+                    } else {
+                        Swal.fire('Failed!', 'Could not clear metrics.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error clearing metrics:', error);
+                    Swal.fire('Error!', 'An error occurred while clearing metrics.', 'error');
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>

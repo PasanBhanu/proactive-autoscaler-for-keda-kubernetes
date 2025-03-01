@@ -1,16 +1,19 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
 import sqlite3
 
 
 app = Flask(__name__)
+CORS(app)
+
+
+conn = sqlite3.connect('metrics.db', check_same_thread=False)
+cursor = conn.cursor()
 
 
 def fetch_last_100_records():
-    conn = sqlite3.connect('metrics.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM metric_history ORDER BY timestamp DESC LIMIT 100')
+    cursor.execute('SELECT * FROM metric_history ORDER BY timestamp DESC LIMIT 1000')
     records = cursor.fetchall()
-    conn.close()
     return records
 
 
@@ -21,6 +24,16 @@ def get_metrics():
         return jsonify(records)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/metrics/clear', methods=['POST'])
+def clear_metrics():
+    try:
+        cursor.execute('DELETE FROM metric_history')
+        conn.commit()
+        return jsonify({'message': 'Metrics cleared successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

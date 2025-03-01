@@ -6,6 +6,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
-EXPOSE 50051
+EXPOSE 50051 5000
 
-CMD ["python", "keda-grpc-server.py"] 
+CMD ["python", "keda-grpc-server.py", "fetch_data_api.py"] 
