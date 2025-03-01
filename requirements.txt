@@ -10,3 +10,4 @@ protobuf
 prometheus-api-client
 flask
 flask-cors
+subprocess.run
