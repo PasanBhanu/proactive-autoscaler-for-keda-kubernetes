@@ -1,9 +1,9 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="ui", static_url_path="/")
 CORS(app)
 
 
@@ -15,6 +15,11 @@ def fetch_last_100_records():
     cursor.execute('SELECT * FROM metric_history ORDER BY timestamp DESC LIMIT 1000')
     records = cursor.fetchall()
     return records
+
+
+@app.route('/')
+def serve_ui():
+    return send_from_directory("ui", "index.html")
 
 
 @app.route('/api/metrics', methods=['GET'])
