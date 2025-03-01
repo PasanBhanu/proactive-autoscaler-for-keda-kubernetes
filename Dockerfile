@@ -8,4 +8,4 @@ COPY . .
 
 EXPOSE 50051 5000
 
-CMD ["python", "keda-grpc-server.py", "fetch_data_api.py"] 
+CMD ["python", "starter.py"] 

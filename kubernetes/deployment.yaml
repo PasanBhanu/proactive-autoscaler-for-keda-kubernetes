@@ -17,6 +17,7 @@ spec:
         image: pasanbhanu/keda-lsfb-scaler:latest
         ports:
         - containerPort: 50051
+        - containerPort: 5000
 
 
 ---
@@ -28,6 +29,11 @@ spec:
   selector:
     app: keda-lsfb-scaler-deployment
   ports:
-    - protocol: TCP
+    - name: grpc
+      protocol: TCP
       port: 50051
       targetPort: 50051
+    - name: ui
+      protocol: TCP
+      port: 5000
+      targetPort: 5000
