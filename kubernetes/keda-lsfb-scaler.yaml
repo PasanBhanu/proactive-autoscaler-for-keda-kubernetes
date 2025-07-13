@@ -26,3 +26,4 @@ spec:
       query: sum(rate(http_server_requests_seconds_count{job="springbootapi-service"}[1m]))
       podLimit: "1000"
       scaleFactor: "100"
+      activationValue: "10"
