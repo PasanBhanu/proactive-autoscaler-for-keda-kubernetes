@@ -118,6 +118,11 @@ class ExternalScalerServicer(externalscaler_pb2_grpc.ExternalScalerServicer):
 
         prometheus_value = get_prometheus_metric(server_address, query) * int(scale_factor)
         predicted_value = hybrid_prediction(prometheus_value, prophet_model, lstm_model, scaler)
+
+        # Idle Prediction Error
+        if predicted_value < 2000 and prometheus_value < 10:
+            predicted_value = prometheus_value
+
         logging.info(f"Prometheus Value: {prometheus_value}, Predicted Value: {predicted_value}")
         
         pod_count = float(predicted_value) / int(pod_limit)
